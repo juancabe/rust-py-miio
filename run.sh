@@ -3,4 +3,4 @@ source venv/bin/activate
 rm -r target
 pip install git+https://github.com/rytilahti/python-miio.git
 export PYTHONPATH="$(pwd)/venv/lib/python3.11/site-packages"
-cargo test -- --nocapture
+RUST_TEST_THREADS=1 cargo test

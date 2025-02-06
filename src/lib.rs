@@ -4,35 +4,37 @@
 //! Devices are represented by the Device struct which supports serialization and deserialization.
 
 use std::collections::HashMap;
+use std::ffi::CString;
 
 use pyo3::prelude::*;
-use pyo3::types::{PyBytes, PyDict, PyList};
+use pyo3::types::{PyBytes, PyDict, PyModule};
 
 use serde::{Deserialize, Serialize};
 use serde_json;
 
 mod constants;
 
+const MIIO_INTERFACE_CODE: &str = include_str!("../python-src/miio_interface.py");
+
 /// Retrieves a list of available device types from the Python interface.
 ///
 /// # Arguments
 ///
-/// * `python_source_path` - The file system path to the Python source code directory.
 ///
 /// # Returns
 ///
 /// * `Ok(Vec<String>)` - A vector of device type names if successful.
 /// * `Err(PyErr)` - An error if the Python call fails.
 
-pub fn get_device_types(python_source_path: &str) -> Result<Vec<String>, PyErr> {
+pub fn get_device_types() -> Result<Vec<String>, PyErr> {
     Python::with_gil(|py| {
-        let sys = py.import("sys")?;
-        let binding = sys.getattr("path")?;
-        let path = binding.downcast::<PyList>()?;
-        path.insert(0, python_source_path)?;
-
         // Import the Python module
-        let miio_module = PyModule::import(py, "miio_interface")?;
+        let miio_module = PyModule::from_code(
+            py,
+            CString::new(MIIO_INTERFACE_CODE)?.as_c_str(),
+            &CString::new("miio_interface.py")?,
+            &CString::new("miio_interface")?,
+        )?;
 
         // Retrieve the Python function 'get_device_types'
         let get_device_types = miio_module.getattr("get_device_types")?;
@@ -108,26 +110,20 @@ impl Device {
     /// * `ip` - The IP address of the device.
     /// * `token` - The token used for authentication.
     /// * `device_type` - The type of the device.
-    /// * `python_source_path` - The file system path to the Python source code directory.
     ///
     /// # Returns
     ///
     /// * `Ok(Device)` on success.
     /// * `Err(PyErr)` if any Python call fails.
-    pub fn create_device(
-        ip: &str,
-        token: &str,
-        device_type: &str,
-        python_source_path: &str,
-    ) -> Result<Device, PyErr> {
+    pub fn create_device(ip: &str, token: &str, device_type: &str) -> Result<Device, PyErr> {
         Python::with_gil(|py| {
-            let sys = py.import("sys")?;
-            let binding = sys.getattr("path")?;
-            let path = binding.downcast::<PyList>()?;
-            path.insert(0, python_source_path)?;
-
             // Import the Python module
-            let miio_module = PyModule::import(py, "miio_interface")?;
+            let miio_module = PyModule::from_code(
+                py,
+                CString::new(MIIO_INTERFACE_CODE)?.as_c_str(),
+                &CString::new("miio_interface.py")?,
+                &CString::new("miio_interface")?,
+            )?;
 
             // Retrieve the Python function 'create_device'
             let create_device = miio_module.getattr("get_device")?;
@@ -168,26 +164,20 @@ impl Device {
     ///
     /// * `method_name` - The name of the method to be called.
     /// * `args` - A vector of string arguments for the method.
-    /// * `python_source_path` - The path to the Python source directory.
     ///
     /// # Returns
     ///
     /// * `Ok(String)` containing the result if successful.
     /// * `Err(PyErr)` if the Python call fails.
-    pub fn call_method(
-        &self,
-        method_name: &str,
-        args: Vec<&str>,
-        python_source_path: &str,
-    ) -> Result<String, PyErr> {
+    pub fn call_method(&self, method_name: &str, args: Vec<&str>) -> Result<String, PyErr> {
         Python::with_gil(|py| {
-            let sys = py.import("sys")?;
-            let binding = sys.getattr("path")?;
-            let path = binding.downcast::<PyList>()?;
-            path.insert(0, python_source_path)?;
-
             // Import the Python module
-            let miio_module = PyModule::import(py, "miio_interface")?;
+            let miio_module = PyModule::from_code(
+                py,
+                CString::new(MIIO_INTERFACE_CODE)?.as_c_str(),
+                &CString::new("miio_interface.py")?,
+                &CString::new("miio_interface")?,
+            )?;
 
             // Retrieve the Python function 'call_method'
             let call_method = miio_module.getattr("call_method")?;
@@ -207,12 +197,12 @@ mod tests {
 
     #[test]
     fn test_get_device_types_success() {
-        assert!(!get_device_types(PYTHON_SOURCE_PATH).unwrap().is_empty())
+        assert!(!get_device_types().unwrap().is_empty())
     }
 
     #[test]
     fn test_get_device_types_cherry_picked() {
-        let device_types = get_device_types(PYTHON_SOURCE_PATH).unwrap();
+        let device_types = get_device_types().unwrap();
         assert!(device_types.contains(&String::from("Yeelight")));
         assert!(device_types.contains(&String::from("DummyWifiRepeater")));
         assert!(device_types.contains(&String::from("DummyWalkingpad")));
@@ -222,7 +212,7 @@ mod tests {
 
     #[test]
     fn test_get_device_types_cherry_picked_ne() {
-        let device_types = get_device_types(PYTHON_SOURCE_PATH).unwrap();
+        let device_types = get_device_types().unwrap();
         assert!(!device_types.contains(&String::from("Yeeli")));
         assert!(!device_types.contains(&String::from("DummyStupidWifiRepeater")));
         assert!(!device_types.contains(&String::from("DummySleepingpad")));
@@ -232,7 +222,7 @@ mod tests {
 
     #[test]
     fn test_create_device_success() {
-        let device = Device::create_device(IP, TOKEN, DEVICE_TYPE, PYTHON_SOURCE_PATH).unwrap();
+        let device = Device::create_device(IP, TOKEN, DEVICE_TYPE).unwrap();
         assert_eq!(device.device_type, DEVICE_TYPE);
         assert_eq!(device.ip, IP);
         assert_eq!(device.token, TOKEN);
@@ -241,42 +231,40 @@ mod tests {
 
     #[test]
     fn test_get_device_types_error() {
-        assert!(!Device::create_device(
-            "0.0.0.0.0.0.0.0.0",
-            TOKEN,
-            DEVICE_TYPE,
-            PYTHON_SOURCE_PATH
-        )
-        .is_ok());
-        assert!(
-            !Device::create_device(IP, "tokennnnnnnnnnnnnn", DEVICE_TYPE, PYTHON_SOURCE_PATH)
-                .is_ok()
-        );
-        assert!(
-            !Device::create_device(IP, TOKEN, "NotADeviceYkkkkkkkkkkkkk", PYTHON_SOURCE_PATH)
-                .is_ok()
-        );
+        assert!(!Device::create_device("0.0.0.0.0.0.0.0.0", TOKEN, DEVICE_TYPE,).is_ok());
+        assert!(!Device::create_device(IP, "tokennnnnnnnnnnnnn", DEVICE_TYPE,).is_ok());
+        assert!(!Device::create_device(IP, TOKEN, "NotADeviceYkkkkkkkkkkkkk",).is_ok());
     }
 
     #[test]
     fn test_get_device_methods() {
-        let device = Device::create_device(IP, TOKEN, DEVICE_TYPE, PYTHON_SOURCE_PATH).unwrap();
+        let device = Device::create_device(IP, TOKEN, DEVICE_TYPE).unwrap();
         assert!(!device.callable_methods.is_empty());
         assert!(device.callable_methods.contains_key("toggle"));
     }
 
     #[test]
     fn test_call_method() {
-        let device = Device::create_device(IP, TOKEN, DEVICE_TYPE, PYTHON_SOURCE_PATH).unwrap();
-        let result = device
-            .call_method(METHOD_NAME, vec![], PYTHON_SOURCE_PATH)
-            .unwrap();
+        let device = Device::create_device(IP, TOKEN, DEVICE_TYPE).unwrap();
+        let result = device.call_method(METHOD_NAME, vec![]).unwrap();
         assert_eq!(result, "['ok']");
     }
 
     #[test]
+    fn test_serialize_to_file() {
+        let device = Device::create_device(IP, TOKEN, DEVICE_TYPE).unwrap();
+        let folder = String::from("/tmp");
+        let file_name = String::from("device.json");
+        device
+            .serialize_to_file(folder.clone(), file_name.clone())
+            .unwrap();
+        let path = format!("{}/{}", folder, file_name);
+        assert!(std::fs::metadata(path).is_ok());
+    }
+
+    #[test]
     fn test_serialize_deserialize_to_file() {
-        let device = Device::create_device(IP, TOKEN, DEVICE_TYPE, PYTHON_SOURCE_PATH).unwrap();
+        let device = Device::create_device(IP, TOKEN, DEVICE_TYPE).unwrap();
         let folder = String::from("/tmp");
         let file_name = String::from("device.json");
         device
