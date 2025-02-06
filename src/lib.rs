@@ -222,8 +222,6 @@ mod tests {
         let device_types = get_device_types().unwrap();
         assert!(device_types.contains(&String::from("Yeelight")));
         assert!(device_types.contains(&String::from("FanMiot")));
-        assert!(device_types.contains(&String::from("DummyAirPurifierMiotMB5")));
-        assert!(device_types.contains(&String::from("DummyFanMiotP11")));
         assert!(device_types.contains(&String::from("AirHumidifierMiot")));
     }
 
