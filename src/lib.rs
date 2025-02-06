@@ -18,9 +18,6 @@ const MIIO_INTERFACE_CODE: &str = include_str!("../python-src/miio_interface.py"
 
 /// Retrieves a list of available device types from the Python interface.
 ///
-/// # Arguments
-///
-///
 /// # Returns
 ///
 /// * `Ok(Vec<String>)` - A vector of device type names if successful.
@@ -75,7 +72,7 @@ impl Device {
     /// # Returns
     ///
     /// * `Ok(())` on success, or an std::io::Error on failure.
-    pub fn serialize_to_file(&self, folder: String, file_name: String) -> std::io::Result<()> {
+    pub fn serialize_to_file(&self, folder: &str, file_name: &str) -> std::io::Result<()> {
         let path = format!("{}/{}", folder, file_name);
         let json_str = serde_json::to_string_pretty(self)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
@@ -93,7 +90,7 @@ impl Device {
     ///
     /// * `Ok(Device)` if deserialization is successful.
     /// * `Err(std::io::Error)` if an error occurs during file read or parsing.
-    pub fn deserialize_from_file(folder: String, file_name: String) -> std::io::Result<Device> {
+    pub fn deserialize_from_file(folder: &str, file_name: &str) -> std::io::Result<Device> {
         let path = format!("{}/{}", folder, file_name);
         let json_str = std::fs::read_to_string(path)?;
         serde_json::from_str(&json_str)
@@ -268,11 +265,10 @@ mod tests {
     #[test]
     fn test_serialize_to_file() {
         let device = Device::create_device(IP, TOKEN, DEVICE_TYPE).unwrap();
-        let folder = String::from("/tmp");
-        let file_name = String::from("device.json");
-        device
-            .serialize_to_file(folder.clone(), file_name.clone())
-            .unwrap();
+        let folder = std::env::temp_dir();
+        let folder = folder.to_str().unwrap();
+        let file_name = "device.json";
+        device.serialize_to_file(folder, file_name).unwrap();
         let path = format!("{}/{}", folder, file_name);
         assert!(std::fs::metadata(path).is_ok());
     }
@@ -280,11 +276,10 @@ mod tests {
     #[test]
     fn test_serialize_deserialize_to_file() {
         let device = Device::create_device(IP, TOKEN, DEVICE_TYPE).unwrap();
-        let folder = String::from("/tmp");
-        let file_name = String::from("device.json");
-        device
-            .serialize_to_file(folder.clone(), file_name.clone())
-            .unwrap();
+        let folder = std::env::temp_dir();
+        let folder = folder.to_str().unwrap();
+        let file_name = "device.json";
+        device.serialize_to_file(folder, file_name).unwrap();
         let deserialized_device = Device::deserialize_from_file(folder, file_name).unwrap();
         assert_eq!(device.device_type, deserialized_device.device_type);
         assert_eq!(device.ip, deserialized_device.ip);
