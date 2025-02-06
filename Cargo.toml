@@ -1,6 +1,6 @@
 [package]
 name = "rust-py-miio"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Juan Calzada <calzadaj@hotmail.es>"]
 description = "A Rust interface to interact with Miio devices via Python using PyO3."
