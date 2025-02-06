@@ -9,7 +9,7 @@ repository = "https://github.com/juancabe/rust-py-miio"
 homepage = "https://github.com/juancabe/rust-py-miio"
 documentation = "https://docs.rs/rust-py-miio"
 keywords = ["rust", "miio", "pyo3", "integration"]
-categories = ["interoperability", "ffi"]
+categories = ["api-bindings", "external-ffi-bindings", "gui"]
 exclude = ["/python-src/__pycache__", "/.gitignore"]
 
 [dependencies]
