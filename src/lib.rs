@@ -196,6 +196,23 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_python_path() {
+        // eprintln!("Python interpreter path loading...");
+        let res: Result<(), PyErr> = Python::with_gil(|py| {
+            let sys = PyModule::import(py, "sys")?;
+            let path = sys.getattr("path")?;
+            let path: Vec<String> = path.extract()?;
+            if path.is_empty() {
+                return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                    "Python path is empty",
+                ));
+            }
+            Ok(())
+        });
+        assert!(res.is_ok());
+    }
+
+    #[test]
     fn test_get_device_types_success() {
         assert!(!get_device_types().unwrap().is_empty())
     }
@@ -204,10 +221,10 @@ mod tests {
     fn test_get_device_types_cherry_picked() {
         let device_types = get_device_types().unwrap();
         assert!(device_types.contains(&String::from("Yeelight")));
-        assert!(device_types.contains(&String::from("DummyWifiRepeater")));
-        assert!(device_types.contains(&String::from("DummyWalkingpad")));
         assert!(device_types.contains(&String::from("FanMiot")));
-        assert!(device_types.contains(&String::from("DummyAirQualityMonitorB1")));
+        assert!(device_types.contains(&String::from("DummyAirPurifierMiotMB5")));
+        assert!(device_types.contains(&String::from("DummyFanMiotP11")));
+        assert!(device_types.contains(&String::from("AirHumidifierMiot")));
     }
 
     #[test]
