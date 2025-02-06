@@ -118,7 +118,7 @@ def get_device(ip: str, token: str, device_type: DeviceTypeName) -> bytes:
     device = _get_device_object(ip, token, device_type)
     return _get_device_bytes(device)
 
-def get_callable_methods_info(device: Device) -> Dict[str, CallableMethodSignature]:
+def _get_device_methods(device: Device) -> Dict[str, CallableMethodSignature]:
     """
     Retrieves information about all callable methods of the provided device object.
 
@@ -143,7 +143,24 @@ def get_callable_methods_info(device: Device) -> Dict[str, CallableMethodSignatu
                 methods_info[name] = "No signature available"
     return methods_info
 
-def callMethod(device: Device, method_name: str, args: List[str]) -> str:
+def get_device_methods(device: bytes) -> Dict[str, CallableMethodSignature]:
+    """
+    Deserializes a device object from bytes and retrieves information about its callable methods.
+
+    This function deserializes the device object from bytes using the pickle module and then
+    calls _get_device_methods to retrieve information about its callable methods.
+
+    Args:
+        device (bytes): A serialized representation of the device object.
+
+    Returns:
+        Dict[str, CallableMethodSignature]: A dictionary where each key is a callable method name
+        and the value is a string representation of its parameter signature.
+    """
+    device = pickle.loads(device)
+    return _get_device_methods(device)
+
+def _call_method(device: Device, method_name: str, args: List[str]) -> str:
     try:
         method = getattr(device, method_name, None)
         if not method or not callable(method):
@@ -152,6 +169,10 @@ def callMethod(device: Device, method_name: str, args: List[str]) -> str:
         return str(result)
     except Exception as e:
         return f"Error calling method '{method_name}': {e}"
+    
+def call_method(device: bytes, method_name: str, args: List[str]) -> str:
+    device = pickle.loads(device)
+    return _call_method(device, method_name, args)
 
 if __name__ == "__main__":
     print("Available device types:", get_device_types())
@@ -162,8 +183,7 @@ if __name__ == "__main__":
     ip = constants.ip
     token = constants.token
     device = get_device(ip, token, device_type)
-    device = pickle.loads(device)
-    methods_info = get_callable_methods_info(device)
+    methods_info = get_device_methods(device)
     print("Callable methods with parameters:")
     for method, params in methods_info.items():
         print(f"{method}{params}")
@@ -172,7 +192,7 @@ if __name__ == "__main__":
     toggle_methods = [method for method in methods_info if "set_color_temperature" in method]
     if toggle_methods:
         toggle_method = toggle_methods[0]
-        result = callMethod(device, toggle_method, [2700])
+        result = call_method(device, toggle_method, [2700])
         print(f"Result of calling {toggle_method}: {result}")
     else:
         print("No toggle methods found")
