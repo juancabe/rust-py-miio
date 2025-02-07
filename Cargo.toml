@@ -1,9 +1,9 @@
 [package]
 name = "rust-py-miio"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Juan Calzada <calzadaj@hotmail.es>"]
-description = "A Rust interface to interact with Miio devices via Python using PyO3."
+description = "A Rust interface to interact with Miio devices via Python using PyO3. Doesn't pretend to be used by third parties."
 license = "MIT"
 repository = "https://github.com/juancabe/rust-py-miio"
 homepage = "https://github.com/juancabe/rust-py-miio"
