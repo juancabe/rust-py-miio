@@ -102,8 +102,7 @@ impl Device {
     /// * `Ok(())` on success, or an std::io::Error on failure.
     pub fn serialize_to_file(&self, folder: &str, file_name: &str) -> std::io::Result<()> {
         let path = format!("{}/{}", folder, file_name);
-        let json_str = serde_json::to_string_pretty(self)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let json_str = self.serialize_json()?;
         std::fs::write(path, json_str)
     }
 
@@ -121,8 +120,7 @@ impl Device {
     pub fn deserialize_from_file(folder: &str, file_name: &str) -> std::io::Result<Device> {
         let path = format!("{}/{}", folder, file_name);
         let json_str = std::fs::read_to_string(path)?;
-        serde_json::from_str(&json_str)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+        Ok(Device::deserialize_json(&json_str)?)
     }
 
     /// Creates a new Device instance by invoking the Python function.
