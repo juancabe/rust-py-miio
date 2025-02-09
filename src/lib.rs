@@ -49,19 +49,47 @@ pub fn get_device_types() -> Result<Vec<String>, PyErr> {
 /// along with functionalities to serialize/deserialize the device configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Device {
-    /// The type of the device.
-    device_type: String,
-    /// The IP address of the device.
-    ip: String,
-    /// The token used for device authentication.
-    token: String,
     /// A serialized representation of the underlying Python object as bytes.
-    serialized_py_object: Vec<u8>,
+    pub serialized_py_object: Vec<u8>,
     /// A map of callable method names to their corresponding Python signatures.
-    callable_methods: HashMap<String, String>,
+    pub callable_methods: HashMap<String, String>,
 }
 
 impl Device {
+    /// Deserializes a JSON string into a `Device` instance.
+    ///
+    /// This function leverages Serde's JSON deserializer to parse the provided JSON
+    /// string and convert it into a corresponding `Device` instance. The JSON must
+    /// correctly represent the `Device` struct's fields.
+    ///
+    /// # Arguments
+    ///
+    /// * `json_str` - A string slice that holds the JSON representation of a `Device`.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Device)` containing the `Device` instance if deserialization succeeds.
+    /// * `Err(serde_json::Error)` if parsing fails due to invalid JSON or type mismatch.
+    pub fn deserialize_json(json_str: &str) -> Result<Device, serde_json::Error> {
+        serde_json::from_str(json_str)
+    }
+
+    /// Serializes the Device instance into a JSON string using pretty formatting.
+    ///
+    /// This function leverages Serde's JSON serializer with pretty print enabled
+    /// to convert the `Device` struct into a human-readable JSON string. The output
+    /// includes appropriate whitespace and line breaks, making it easier to read and
+    /// debug.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` containing the formatted JSON representation of the Device if serialization succeeds.
+    /// * `Err(serde_json::Error)` if any serialization error occurs.
+
+    pub fn serialize_json(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(self)
+    }
+
     /// Serializes the Device instance to a JSON file.
     ///
     /// # Arguments
@@ -74,8 +102,7 @@ impl Device {
     /// * `Ok(())` on success, or an std::io::Error on failure.
     pub fn serialize_to_file(&self, folder: &str, file_name: &str) -> std::io::Result<()> {
         let path = format!("{}/{}", folder, file_name);
-        let json_str = serde_json::to_string_pretty(self)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let json_str = self.serialize_json()?;
         std::fs::write(path, json_str)
     }
 
@@ -93,8 +120,7 @@ impl Device {
     pub fn deserialize_from_file(folder: &str, file_name: &str) -> std::io::Result<Device> {
         let path = format!("{}/{}", folder, file_name);
         let json_str = std::fs::read_to_string(path)?;
-        serde_json::from_str(&json_str)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+        Ok(Device::deserialize_json(&json_str)?)
     }
 
     /// Creates a new Device instance by invoking the Python function.
@@ -144,9 +170,6 @@ impl Device {
 
             let device_bytes = device.as_bytes().to_vec();
             Ok(Device {
-                device_type: device_type.to_string(),
-                ip: ip.to_string(),
-                token: token.to_string(),
                 serialized_py_object: device_bytes,
                 callable_methods,
             })
@@ -235,9 +258,6 @@ mod tests {
     #[test]
     fn test_create_device_success() {
         let device = Device::create_device(IP, TOKEN, DEVICE_TYPE).unwrap();
-        assert_eq!(device.device_type, DEVICE_TYPE);
-        assert_eq!(device.ip, IP);
-        assert_eq!(device.token, TOKEN);
         assert!(!device.serialized_py_object.is_empty());
     }
 
@@ -281,9 +301,6 @@ mod tests {
         let file_name = "device.json";
         device.serialize_to_file(folder, file_name).unwrap();
         let deserialized_device = Device::deserialize_from_file(folder, file_name).unwrap();
-        assert_eq!(device.device_type, deserialized_device.device_type);
-        assert_eq!(device.ip, deserialized_device.ip);
-        assert_eq!(device.token, deserialized_device.token);
         assert_eq!(
             device.serialized_py_object,
             deserialized_device.serialized_py_object

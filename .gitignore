@@ -2,5 +2,5 @@ target/
 venv/
 Cargo.lock
 __pycache__/
-src/constants.rs
-python-src/constants.py
+constants.rs
+constants.py
