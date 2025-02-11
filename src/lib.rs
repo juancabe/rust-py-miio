@@ -189,6 +189,7 @@ impl Device {
     ///
     /// * `Ok(String)` containing the result if successful.
     /// * `Err(PyErr)` if the Python call fails.
+
     pub fn call_method(&self, method_name: &str, args: Vec<&str>) -> Result<String, PyErr> {
         Python::with_gil(|py| {
             // Import the Python module
@@ -280,6 +281,16 @@ mod tests {
         let device = Device::create_device(IP, TOKEN, DEVICE_TYPE).unwrap();
         let result = device.call_method(METHOD_NAME, vec![]).unwrap();
         assert_eq!(result, "['ok']");
+        let device = Device::create_device(IP, TOKEN, DEVICE_TYPE).unwrap();
+        let result = device.call_method("set_rgb", vec!["(32, 32, 32)"]).unwrap();
+        assert_eq!(result, "['ok']");
+    }
+
+    #[test]
+    fn test_call_method_err() {
+        let device = Device::create_device(IP, TOKEN, DEVICE_TYPE).unwrap();
+        let result = device.call_method("set_rgb", vec!["[32, 32, 32]"]).unwrap();
+        eprintln!("{}", result);
     }
 
     #[test]

@@ -160,12 +160,18 @@ def get_device_methods(device: bytes) -> Dict[str, CallableMethodSignature]:
     device = pickle.loads(device)
     return _get_device_methods(device)
 
+import ast
+
 def _call_method(device: Device, method_name: str, args: List[str]) -> str:
     try:
+        # Convert each argument from a string to its corresponding Python literal.
+        converted_args = [ast.literal_eval(arg) for arg in args]
+        # Print arguments' types
+        print([type(arg) for arg in converted_args])
         method = getattr(device, method_name, None)
         if not method or not callable(method):
             raise ValueError(f"Method '{method_name}' not found on device {type(device).__name__}")
-        result = method(*args)
+        result = method(*converted_args)
         return str(result)
     except Exception as e:
         return f"Error calling method '{method_name}': {e}"
@@ -189,10 +195,10 @@ if __name__ == "__main__":
         print(f"{method}{params}")
 
     # Call a method that contains the string str in its name
-    toggle_methods = [method for method in methods_info if "set_color_temperature" in method]
+    toggle_methods = [method for method in methods_info if "set_rgb" in method]
     if toggle_methods:
         toggle_method = toggle_methods[0]
-        result = call_method(device, toggle_method, [2700])
+        result = call_method(device, toggle_method, ["(40, 40, 40)"])
         print(f"Result of calling {toggle_method}: {result}")
     else:
         print("No toggle methods found")
