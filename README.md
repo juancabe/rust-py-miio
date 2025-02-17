@@ -7,6 +7,9 @@ Devices are represented by the Device struct which supports serialization and de
 
 License: MIT
 
+> [!WARNING]
+> This software is unfinished. Keep your expectations low.
+
 ## python-miio
 Heavily dependant on [python-miio](https://github.com/rytilahti/python-miio)
 
